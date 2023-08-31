@@ -2,7 +2,10 @@ module KYC-go
 
 go 1.21
 
-require github.com/hyperledger/fabric-contract-api-go v1.2.1
+require (
+	github.com/hyperledger/fabric-contract-api-go v1.2.1
+	github.com/sirupsen/logrus v1.9.3
+)
 
 require (
 	github.com/go-openapi/jsonpointer v0.20.0 // indirect
@@ -17,6 +20,7 @@ require (
 	github.com/hyperledger/fabric-protos-go v0.3.0 // indirect
 	github.com/joho/godotenv v1.5.1 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
+	github.com/konsorten/go-windows-terminal-sequences v1.0.3 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/rogpeppe/go-internal v1.11.0 // indirect
 	github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb // indirect
