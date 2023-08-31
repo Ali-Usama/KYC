@@ -3,22 +3,22 @@
     "name": "user01",
     "dateOfBirth": "1987-03-10",
     "address": "Toronto, ON - Canada",
-    "idNumber": "873451",
+    "idNumber": 873451,
     "phoneNumber": "416-123-4567",
     "registeredBy": {
       "orgNum": 1,
-      "ledgerUser": "Bank1"
+      "orgName": "Bank1"
     }
   },
   {
     "name": "user02",
     "dateOfBirth": "1991-11-19",
     "address": "Mississauga, ON - Canada",
-    "idNumber": "839047",
+    "idNumber": 839047,
     "phoneNumber": "647-123-4567",
     "RegisteredBy": {
       "orgNum": 2,
-      "ledgerUser": "Bank2"
+      "orgName": "Bank2"
     }
   }
 ]
