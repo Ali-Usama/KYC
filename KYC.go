@@ -110,6 +110,32 @@ func (s *KYC) InitLedger(ctx contractapi.TransactionContextInterface) error {
 	return nil
 }
 
+func (s *KYC) GetCallerId(ctx contractapi.TransactionContextInterface) (string, error) {
+	callerId, err := ctx.GetClientIdentity().GetID()
+	if err != nil {
+		return "", err
+	}
+	return callerId, nil
+}
+
+// IsRegisteredBy returns {boolean} is who registered or not, return null if client does not exists or does not have data
+func (s *KYC) IsRegisteredBy(ctx contractapi.TransactionContextInterface, clientId string) (bool, error) {
+	client, err := ctx.GetStub().GetState(clientId)
+	if err != nil || client == nil {
+		return false, err
+	}
+	callerId, err := s.GetCallerId(ctx)
+	if err != nil {
+		return false, err
+	}
+	var clientData CustomerData
+	err = json.Unmarshal(client, &clientData)
+	if clientData.RegisteredBy.OrgName == callerId {
+		return true, nil
+	}
+	return false, nil
+}
+
 func main() {
 	KYCchaincode, err := contractapi.NewChaincode(&KYC{
 		NextBankID:   1,
