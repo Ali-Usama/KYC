@@ -17,6 +17,7 @@ type KYC struct {
 }
 
 type CustomerData struct {
+	docType      string
 	Name         string         `json:"name"`
 	DateOfBirth  string         `json:"dateOfBirth"`
 	Address      string         `json:"address"`
@@ -26,6 +27,7 @@ type CustomerData struct {
 }
 
 type BankData struct {
+	docType        string
 	Name           string         `json:"name"`
 	IdNumber       int            `json:"idNumber"`
 	OrgCredentials OrgCredentials `json:"orgCredentials"`
@@ -62,6 +64,7 @@ func (s *KYC) InitLedger(ctx contractapi.TransactionContextInterface) error {
 	}
 
 	for _, customer := range customers {
+		customer.docType = "customer"
 		customerID := s.NextClientID
 		customerJSON, err := json.Marshal(customer)
 		if err != nil {
@@ -73,6 +76,23 @@ func (s *KYC) InitLedger(ctx contractapi.TransactionContextInterface) error {
 			return fmt.Errorf("failed to insert the customer into world state: #{err}")
 		}
 		s.NextClientID++
+
+		customerBankIndexKey, err := ctx.GetStub().CreateCompositeKey("customer~bank", []string{strconv.Itoa(customerID), customer.RegisteredBy.OrgName})
+		if err != nil {
+			return err
+		}
+		bankCustomerIndexKey, err := ctx.GetStub().CreateCompositeKey("bank~customer", []string{customer.RegisteredBy.OrgName, strconv.Itoa(customerID)})
+		if err != nil {
+			return err
+		}
+		err = ctx.GetStub().PutState(customerBankIndexKey, []byte{0x00})
+		if err != nil {
+			return err
+		}
+		err = ctx.GetStub().PutState(bankCustomerIndexKey, []byte{0x00})
+		if err != nil {
+			return err
+		}
 	}
 
 	bankFile, err := os.OpenFile("data/bankData.json", os.O_RDONLY, 0644)
@@ -96,6 +116,7 @@ func (s *KYC) InitLedger(ctx contractapi.TransactionContextInterface) error {
 		return err
 	}
 	for _, bank := range banks {
+		bank.docType = "bank"
 		bankID := s.NextBankID
 		bankJSON, err := json.Marshal(bank)
 		if err != nil {
