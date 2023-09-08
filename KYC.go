@@ -157,6 +157,66 @@ func (s *KYC) IsRegisteredBy(ctx contractapi.TransactionContextInterface, client
 	return false, nil
 }
 
+/**
+ *
+ * @param {Context} ctx
+ * @param {object} clientData
+ * @dev create a new client
+ * @returns {string} new client ID
+ */
+func (s *KYC) CreateClient(ctx contractapi.TransactionContextInterface, clientDataJson string) (string, error) {
+	var customerData CustomerData
+	err := json.Unmarshal([]byte(clientDataJson), &customerData)
+	if err != nil {
+		return "", fmt.Errorf("error parsing customer Data: %s", err)
+	}
+	callerId, err := s.GetCallerId(ctx)
+	if err != nil {
+		return "", fmt.Errorf("error getting callerId: %s", err)
+	}
+
+	// Check if the caller is authorized to register a customer
+	if customerData.RegisteredBy.OrgName != callerId {
+		return "", fmt.Errorf("you are not allowed to register this client")
+	}
+
+	client := CustomerData{
+		docType: "customer",
+	}
+	newId := s.NextClientID
+	s.NextClientID++
+
+	clientJSON, err := json.Marshal(client)
+	if err != nil {
+		return "", fmt.Errorf("error serializing customer Data to JSON: %s", err)
+	}
+	err = ctx.GetStub().PutState(strconv.Itoa(newId), clientJSON)
+	if err != nil {
+		return "", fmt.Errorf("error inserting client into world state: %s", err)
+	}
+
+	// Create the composite key that will allow us to query for all clients registered by a specific bank
+	clientBankIndexKey, err := ctx.GetStub().CreateCompositeKey("customer~bank", []string{strconv.Itoa(newId), callerId})
+	if err != nil {
+		return "", fmt.Errorf("error creating client composite key: %s", err)
+	}
+	bankClientIndexKey, err := ctx.GetStub().CreateCompositeKey("bank~customer", []string{callerId, strconv.Itoa(newId)})
+	if err != nil {
+		return "", fmt.Errorf("error creating bank composite key: %s", err)
+	}
+
+	err = ctx.GetStub().PutState(clientBankIndexKey, []byte{0x00})
+	if err != nil {
+		return "", fmt.Errorf("error inserting client index into world state: %s", err)
+	}
+	err = ctx.GetStub().PutState(bankClientIndexKey, []byte{0x00})
+	if err != nil {
+		return "", fmt.Errorf("error inserting bank index into world state: %s", err)
+	}
+
+	return strconv.Itoa(newId), nil
+}
+
 func main() {
 	KYCchaincode, err := contractapi.NewChaincode(&KYC{
 		NextBankID:   1,
