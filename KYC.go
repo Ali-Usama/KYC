@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/hyperledger/fabric-chaincode-go/shim"
 	"github.com/hyperledger/fabric-contract-api-go/contractapi"
 	log "github.com/sirupsen/logrus"
 	"io"
@@ -242,6 +243,38 @@ func (s *KYC) GetClientData(ctx contractapi.TransactionContextInterface, clientI
 		}
 	}
 	return string(clientDataJson), nil
+}
+
+// GetAllClients returns the data of all customers
+func (s *KYC) GetAllClients(ctx contractapi.TransactionContextInterface) ([]CustomerData, error) {
+	// Get a range of all the keys in the ledger
+	resultsIterator, err := ctx.GetStub().GetStateByRange("", "")
+	if err != nil {
+		return nil, err
+	}
+	defer func(resultsIterator shim.StateQueryIteratorInterface) {
+		err := resultsIterator.Close()
+		if err != nil {
+			panic(err)
+		}
+	}(resultsIterator)
+
+	var clients []CustomerData
+	for resultsIterator.HasNext() {
+		queryResponse, err := resultsIterator.Next()
+		if err != nil {
+			return nil, err
+		}
+
+		var client CustomerData
+		err = json.Unmarshal(queryResponse.Value, &client)
+		if err != nil {
+			return nil, err
+		}
+		clients = append(clients, client)
+	}
+
+	return clients, nil
 }
 
 func main() {
