@@ -157,13 +157,7 @@ func (s *KYC) IsRegisteredBy(ctx contractapi.TransactionContextInterface, client
 	return false, nil
 }
 
-/**
- *
- * @param {Context} ctx
- * @param {object} clientData
- * @dev create a new client
- * @returns {string} new client ID
- */
+// CreateClient creates a new client and returns its ID
 func (s *KYC) CreateClient(ctx contractapi.TransactionContextInterface, clientDataJson string) (string, error) {
 	var customerData CustomerData
 	err := json.Unmarshal([]byte(clientDataJson), &customerData)
@@ -215,6 +209,39 @@ func (s *KYC) CreateClient(ctx contractapi.TransactionContextInterface, clientDa
 	}
 
 	return strconv.Itoa(newId), nil
+}
+
+// GetClientData returns customer's data as requested by a bank
+func (s *KYC) GetClientData(ctx contractapi.TransactionContextInterface, clientId string, fields []string) (string, error) {
+	client, err := ctx.GetStub().GetState(clientId)
+	if err != nil || client == nil {
+		return "", fmt.Errorf("error getting client data: %s", err)
+	}
+	callerId, err := s.GetCallerId(ctx)
+	if err != nil {
+		return "", fmt.Errorf("error getting callerId: %s", err)
+	}
+	var clientData CustomerData
+	err = json.Unmarshal(client, &clientData)
+	if err != nil {
+		return "", fmt.Errorf("error parsing client data: %s", err)
+	}
+	if clientData.RegisteredBy.OrgName != callerId {
+		return "", fmt.Errorf("you are not allowed to get this client data")
+	}
+	var clientDataJson []byte
+	if len(fields) == 0 {
+		clientDataJson, err = json.Marshal(clientData)
+		if err != nil {
+			return "", fmt.Errorf("error serializing client data to JSON: %s", err)
+		}
+	} else {
+		clientDataJson, err = json.Marshal(clientData)
+		if err != nil {
+			return "", fmt.Errorf("error serializing client data to JSON: %s", err)
+		}
+	}
+	return string(clientDataJson), nil
 }
 
 func main() {
